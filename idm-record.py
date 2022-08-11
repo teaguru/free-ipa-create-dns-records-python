@@ -53,8 +53,7 @@ class ipa(object):
         data = {'id': 0, 'method': pdict['method'], 'params':
                 [pdict['item'], pdict['params']]}
 
-        self.log.debug('Making {0} request to {1}'.format(pdict['method'],
-                        session_url))
+        self.log.debug('Making {0} request to {1}'.format(pdict['method'], session_url))
 
         request = self.session.post(
                 session_url, headers=header,
@@ -66,41 +65,40 @@ class ipa(object):
         return results
 
     def dnsrecord_del(self, idnsname):
-        m = {'item': [zone_name], 'method': 'dnsrecord_del', 'params':
-                 {'del_all' : True}}
-        m['params']['idnsname'] = idnsname                
+        m = {'item': [zone_name], 'method': 'dnsrecord_del', 'params': {'del_all': True}}
+        m['params']['idnsname'] = idnsname
         request = self.makeReq(m)
         if request and request.get('error'):
-             print(request['error']['message'])
+            print(request['error']['message'])
         else:
             print(request['result'])
             if request['result']['value'][0] == idnsname:
-                print(idnsname, 'deleted')                
+                print(idnsname, 'deleted')
                 return True
             else:
-                return False            
+                return False
 
     def dnsrecord_add(self, idnsname, target, type):
         m = {'item': [zone_name], 'method': 'dnsrecord_add', 'params':
-                 {'all': True, 'raw': False}}
+        {'all': True, 'raw': False}}
         if type == 'cnamerecord':
             m['params']['cnamerecord'] = target
             m['params']['idnsname'] = idnsname
         elif type == 'arecord':
             m['params']['arecord'] = target
-            m['params']['idnsname'] = idnsname 
+            m['params']['idnsname'] = idnsname
         else:
-            print('Wrong record type - ', type )
-            return(False)                    
+            print('Wrong record type - ', type)
+            return(False)
         request = self.makeReq(m)
         if request and request.get('error'):
             if request['error']['message'] == 'no modifications to be performed':
                 print(request['error']['message'])
                 print(request['error'])
-                print(idnsname,' was not created')
+                print(idnsname, ' was not created')
                 print(idnsname, ' record is already exist or nothing to change')
                 return(True)
-            else:                
+            else:
                 print(request['error']['message'])
                 print(idnsname, 'creation error')
                 return False
@@ -110,11 +108,9 @@ class ipa(object):
             return True
         return False
 
-
     def dnsrecord_check(self, idnsname, target, type):
-        m = {'item': [zone_name], 'method': 'dnsrecord_find', 'params':
-                 {}}
-        m['params']['idnsname'] = idnsname                  
+        m = {'item': [zone_name], 'method': 'dnsrecord_find', 'params': {}}
+        m['params']['idnsname'] = idnsname
         request = self.makeReq(m)
         if request['result']['result'] == []:
             print("doesn't exist")
@@ -129,26 +125,32 @@ class ipa(object):
             bcp_target = result['cnamerecord']
         else:
             print('already exist record of different type')
-            return False    
+            return False
+
         print(result)
         if type in result:
             if result['idnsname'][0] == idnsname and result[type][0] == target:
                 print('record exist and it is correct')
                 return True
-            else: 
+            else:
                 print('should fix')
+
                 self.dnsrecord_del(idnsname)
                 print('we are here')
                 if self.dnsrecord_add(idnsname, target, type):
-                    print('ok')
+                    print('ok, record changed sucessfuly')
                 else:
-                    print('we are here 2')
-                    self.dnsrecord_add(idsname, bcp_target, bcp_type)
-                    print('bcp restored')        
-        else: 
-            print('should fix')
+                    self.dnsrecord_add(idnsname, bcp_target, bcp_type)
+                    print('bcp restored')
+        else:
+            print('we should change a record')
             self.dnsrecord_del(idnsname)
-            self.dnsrecord_add(idnsname, target, type)
+            if self.dnsrecord_add(idnsname, target, type):
+                    print('ok, record changed sucessfuly')
+            else:
+                self.dnsrecord_add(idnsname, bcp_target, bcp_type)
+                print('bcp restored')
+
         return(request['result']['result'][0])
          
 ipa = ipa('ipa_url')
